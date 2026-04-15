@@ -68,7 +68,7 @@ export default function InteractiveModel({ mode, setShaderProps }: { mode: strin
   // Catalog State
   const [selectedBH, setSelectedBH] = useState<BlackHole>(knownMassBHs.find(b => b.name === 'Mrk335') || knownMassBHs[0]);
   const [filters, setFilters] = useState<Filters>({ search: '', category: null });
-  const [isCatalogOpen, setIsCatalogOpen] = useState(true);
+  const [visualMode, setVisualMode] = useState<'scientific' | 'cinematic'>('scientific');
 
   const activeData = parts.find(p => p.id === activePart);
   const filteredData = filterBlackHoles(knownMassBHs, filters);
@@ -76,10 +76,10 @@ export default function InteractiveModel({ mode, setShaderProps }: { mode: strin
   // Sync shader with selected black hole
   useEffect(() => {
     if (selectedBH) {
-      const shaderData = mapToShader(selectedBH);
+      const shaderData = mapToShader(selectedBH, visualMode);
       setShaderProps((p: any) => ({ ...p, ...shaderData }));
     }
-  }, [selectedBH, setShaderProps]);
+  }, [selectedBH, visualMode, setShaderProps]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full pointer-events-none relative flex flex-col items-start pt-24 px-6 md:px-12">
@@ -103,6 +103,25 @@ export default function InteractiveModel({ mode, setShaderProps }: { mode: strin
       {/* Catalog Panel - Fixed on the left side */}
       <div className="pointer-events-auto flex flex-col w-full md:w-80 h-[55vh] md:h-[65vh] bg-black/60 backdrop-blur-xl border border-white/10 rounded-sm overflow-hidden shadow-2xl z-20">
         
+        {/* Header + Mode Toggle */}
+        <div className="flex justify-between items-center px-4 py-3 bg-black/40 border-b border-white/10 shrink-0">
+          <div className="font-tomorrow text-[10px] tracking-widest text-[#E1E0CC]/50 uppercase">Visual Mode</div>
+          <div className="flex bg-white/5 rounded-[2px] p-0.5">
+            <button 
+              onClick={() => setVisualMode('scientific')}
+              className={`font-tomorrow text-[9px] uppercase tracking-wider px-2 py-1 rounded-[2px] transition-colors ${visualMode === 'scientific' ? 'bg-[#E1E0CC] text-black shadow-sm' : 'text-[#E1E0CC]/50 hover:text-[#E1E0CC]'}`}
+            >
+              Scientific
+            </button>
+            <button 
+              onClick={() => setVisualMode('cinematic')}
+              className={`font-tomorrow text-[9px] uppercase tracking-wider px-2 py-1 rounded-[2px] transition-colors ${visualMode === 'cinematic' ? 'bg-[#E1E0CC] text-black shadow-sm' : 'text-[#E1E0CC]/50 hover:text-[#E1E0CC]'}`}
+            >
+              Cinematic
+            </button>
+          </div>
+        </div>
+
         {/* Search Header */}
         <div className="p-4 border-b border-white/10 shrink-0">
           <div className="relative mb-3">

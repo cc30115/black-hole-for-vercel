@@ -168,31 +168,43 @@ export interface ShaderMapping {
   tilt: number;
   rotate: number;
   mass: number;           // for u_mass uniform (clamped RS)
+  overdrive?: number;     // for cinematic glitch
 }
 
-export function mapToShader(bh: BlackHole): ShaderMapping {
+export function mapToShader(bh: BlackHole, mode: 'scientific' | 'cinematic' = 'scientific'): ShaderMapping {
   const logM = bh.log_mass ?? 6.0; // fallback for unknown masses
 
   // RS clamped between 0.5–3.0 for visual stability
   const massUniform = Math.max(0.5, Math.min(3.0, logM * 0.2));
 
   // Scale: larger mass = larger visual footprint
-  const bhScale = Math.max(0.6, Math.min(2.5, logM * 0.15));
+  let bhScale = Math.max(0.6, Math.min(2.5, logM * 0.15));
 
   // Rotation speed: slightly faster for heavier black holes
-  const rotationSpeed = 0.1 + logM * 0.03;
+  let rotationSpeed = 0.1 + logM * 0.03;
 
   // Disk brightness: proportional to activity (eddington_proxy)
-  const diskIntensity = Math.max(0.5, Math.min(3.0, 0.5 + bh.eddington_proxy * 2.5));
+  let diskIntensity = Math.max(0.5, Math.min(3.0, 0.5 + bh.eddington_proxy * 2.5));
 
   // Chromatic: more redshifted = more colorful lensing
-  const chromatic = Math.min(bh.redshift * 2.0, 1.0);
+  let chromatic = Math.min(bh.redshift * 2.0, 1.0);
+
+  let overdrive = 0.0;
+
+  if (mode === 'cinematic') {
+    // Exaggerate visuals for dramatic effect
+    bhScale *= 1.3;
+    rotationSpeed *= 1.5;
+    diskIntensity *= 1.5;
+    chromatic *= 1.8;
+    overdrive = Math.min(bh.eddington_proxy * 0.2, 0.15); // Add subtle glitch mapping based on activity
+  }
 
   // Tilt & rotate: pseudo-random from RA/Dec to give each BH a unique orientation
   const tilt = ((bh.ra_deg % 10) / 10) * 0.5;
   const rotate = ((bh.dec_deg % 10) / 10) * 0.3;
 
-  return { bhScale, rotationSpeed, diskIntensity, chromatic, tilt, rotate, mass: massUniform };
+  return { bhScale, rotationSpeed, diskIntensity, chromatic, tilt, rotate, mass: massUniform, overdrive };
 }
 
 // ─── Filter function ─────────────────────────────────────────
