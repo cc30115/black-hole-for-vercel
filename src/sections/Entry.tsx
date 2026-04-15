@@ -30,6 +30,22 @@ export default function Entry({ onEnter }: { onEnter: () => void, key?: string }
         {/* Overlays */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60 pointer-events-none" />
 
+        {/* Interaction Hint */}
+        <div className="absolute top-[8vh] left-0 right-0 flex justify-center pointer-events-none z-20">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ delay: 2, duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center gap-2"
+          >
+            <div className="w-[1px] h-6 bg-gradient-to-b from-transparent to-[#E1E0CC]/50" />
+            <div className="font-tomorrow text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#E1E0CC]/60 flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full border border-[#E1E0CC]/40 animate-ping absolute -ml-4" />
+              <span>Hold pointer to accelerate singularity</span>
+            </div>
+          </motion.div>
+        </div>
+
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 md:px-8">
           <div className="flex flex-col md:flex-row items-stretch gap-[24px] md:gap-[32px]">

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, animate } from 'motion/react';
 import { Rocket, Activity, Navigation, AlertTriangle } from 'lucide-react';
 
 // rotationSpeed ramps evenly (均分) from 0.3 at stage 0 → 1.2 at stage 3 (fastest) → stays fast through 4 & 5
 const stages = [
-  { time: 0,     name: "Descent",       text: "Initiating descent sequence. Trajectory locked.",                                        scale: 1.0,  chromatic: 0.0, tilt: 0.0, rotationSpeed: 0.3, dist: "10,000 km",  dilation: "1.00x",    temp: "2.7 K"      },
-  { time: 3000,  name: "Accretion Disk", text: "Approaching the Accretion Disk. Radiation shielding at maximum.",                         scale: 2.0,  chromatic: 0.2, tilt: 0.2, rotationSpeed: 0.6, dist: "3,000 km",   dilation: "1.15x",    temp: "10^6 K"     },
-  { time: 7000,  name: "Photon Sphere",  text: "Crossing the Photon Sphere. Optical sensors detecting infinite light loops.",              scale: 4.0,  chromatic: 0.5, tilt: 0.4, rotationSpeed: 0.9, dist: "1,500 km",   dilation: "2.50x",    temp: "10^7 K"     },
-  { time: 12000, name: "Tidal Forces",   text: "Critical structural stress. Spaghettification imminent.",                                  scale: 8.0,  chromatic: 0.8, tilt: 0.6, rotationSpeed: 1.2, dist: "500 km",     dilation: "10.0x",    temp: "10^8 K"     },
-  { time: 17000, name: "Event Horizon",  text: "Event Horizon proximity alert. External communication lost.",                              scale: 16.0, chromatic: 1.0, tilt: 0.8, rotationSpeed: 1.2, dist: "0 km",       dilation: "Infinite", temp: "Unknown"    },
-  { time: 22000, name: "Singularity",    text: "Point of no return crossed. Physics models breaking down.",                                scale: 30.0, chromatic: 0.0, tilt: 0.0, rotationSpeed: 1.5, starsOnly: 1.0,  dist: "Singularity", dilation: "Undefined", temp: "Undefined" },
+  { time: 0,     name: "Descent",       text: "Initiating descent sequence. Trajectory locked.",                                        scale: 1.0,  chromatic: 0.0, tilt: 0.0, rotationSpeed: 0.3, overdrive: 0.0, dist: "10,000 km",  dilation: "1.00x",    temp: "2.7 K"      },
+  { time: 3000,  name: "Accretion Disk", text: "Approaching the Accretion Disk. Radiation shielding at maximum.",                         scale: 2.0,  chromatic: 0.2, tilt: 0.2, rotationSpeed: 0.6, overdrive: 0.0, dist: "3,000 km",   dilation: "1.15x",    temp: "10^6 K"     },
+  { time: 7000,  name: "Photon Sphere",  text: "Crossing the Photon Sphere. Optical sensors detecting infinite light loops.",              scale: 4.0,  chromatic: 0.5, tilt: 0.4, rotationSpeed: 0.9, overdrive: 0.05, dist: "1,500 km",   dilation: "2.50x",    temp: "10^7 K"     },
+  { time: 12000, name: "Tidal Forces",   text: "Critical structural stress. Spaghettification imminent.",                                  scale: 8.0,  chromatic: 0.8, tilt: 0.6, rotationSpeed: 1.2, overdrive: 0.25, dist: "500 km",     dilation: "10.0x",    temp: "10^8 K"     },
+  { time: 17000, name: "Event Horizon",  text: "Event Horizon proximity alert. External communication lost.",                              scale: 16.0, chromatic: 1.0, tilt: 0.8, rotationSpeed: 1.2, overdrive: 0.75, dist: "0 km",       dilation: "Infinite", temp: "Unknown"    },
+  { time: 22000, name: "Singularity",    text: "Point of no return crossed. Physics models breaking down.",                                scale: 30.0, chromatic: 0.0, tilt: 0.0, rotationSpeed: 1.5, overdrive: 1.0, starsOnly: 1.0,  dist: "Singularity", dilation: "Undefined", temp: "Undefined" },
 ];
 
 export default function Immersive({ setShaderProps, onGoHome }: any) {
@@ -23,16 +23,30 @@ export default function Immersive({ setShaderProps, onGoHome }: any) {
     setJourneyId(id => id + 1);
     setCurrentStage(0);
     setIsFinished(false);
-    setShaderProps((p: any) => ({ ...p, bhScale: 1.0, chromatic: 0.0, tilt: 0.0, starsOnly: 0.0 }));
+    setShaderProps((p: any) => ({ ...p, bhScale: 1.0, chromatic: 0.0, tilt: 0.0, starsOnly: 0.0, overdrive: 0.0 }));
   };
 
   useEffect(() => {
     if (!isStarted) return;
 
     let timeouts: any[] = [];
+    let animations: any[] = [];
+    
     stages.forEach((stage, index) => {
       const t = setTimeout(() => {
         setCurrentStage(index);
+        
+        // Smoothly animate the overdrive state over 3 seconds
+        const prevOverdrive = index > 0 ? stages[index - 1].overdrive : 0;
+        const anim = animate(prevOverdrive, stage.overdrive, {
+          duration: 3,
+          ease: "easeInOut",
+          onUpdate: (latest) => {
+            setShaderProps((p: any) => ({ ...p, overdrive: latest }));
+          }
+        });
+        animations.push(anim);
+
         setShaderProps((p: any) => ({
           ...p,
           bhScale: stage.scale,
@@ -54,6 +68,7 @@ export default function Immersive({ setShaderProps, onGoHome }: any) {
 
     return () => {
       timeouts.forEach(clearTimeout);
+      animations.forEach(anim => anim.stop && anim.stop());
     };
   }, [isStarted, journeyId]);
 
