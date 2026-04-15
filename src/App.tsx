@@ -78,7 +78,7 @@ export default function App() {
     setShaderProps(p => ({
       ...p,
       rotate: p.rotate + dx * 0.005,
-      tilt: Math.max(-1.5, Math.min(1.5, p.tilt + dy * 0.005))
+      // tilt remains constant during drag to keep movement purely horizontal
     }));
     
     setLastPos({ x: e.clientX, y: e.clientY });
