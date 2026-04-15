@@ -245,6 +245,10 @@ void main() {
     if (u_overdrive > 0.01) {
         float sx = (hash(vec2(u_time * 20.0, 10.0)) * 2.0 - 1.0);
         float sy = (hash(vec2(u_time * 20.0, 20.0)) * 2.0 - 1.0);
+        
+        float slice = step(0.9, hash(vec2(u_time * 10.0, floor(uv.y * 15.0))));
+        sx += slice * 5.0 * (hash(vec2(u_time, 3.0)) * 2.0 - 1.0);
+        
         uv += vec2(sx, sy) * 0.02 * u_overdrive;
     }
 
@@ -365,7 +369,15 @@ void main() {
     if (u_overdrive > 0.01) {
         float st = hash(fc + u_time * 100.0);
         col = mix(col, vec3(st), u_overdrive * 0.25);
-        if (hash(vec2(u_time * 5.0, uv.y * 10.0)) > 0.8) {
+        
+        // Blocky glitch line
+        float glitchLine = step(0.9, hash(vec2(u_time * 5.0, floor(uv.y * 20.0))));
+        if (glitchLine > 0.0) {
+            col.r += 0.3 * u_overdrive * hash(vec2(u_time, 1.0));
+            col.g += 0.3 * u_overdrive * hash(vec2(u_time, 2.0));
+            col.b += 0.4 * u_overdrive * hash(vec2(u_time, 3.0));
+            col -= 0.15 * u_overdrive;
+        } else if (hash(vec2(u_time * 5.0, uv.y * 10.0)) > 0.8) {
             col.g += 0.3 * u_overdrive;
             col.r -= 0.1 * u_overdrive;
         }

@@ -120,6 +120,14 @@ export default function App() {
     setIsDragging(false);
   };
 
+  const overdrive = shaderProps.overdrive || 0.0;
+  const isGlitched = overdrive > 0.01;
+  const glitchStyle = isGlitched ? {
+    filter: `contrast(${100 + overdrive * 50}%) saturate(${100 + overdrive * 100}%) hue-rotate(${(Math.random() - 0.5) * 90 * overdrive}deg)`,
+    transform: `translate(${(Math.random() - 0.5) * 20 * overdrive}px, ${(Math.random() - 0.5) * 10 * overdrive}px) skewX(${(Math.random() - 0.5) * 20 * overdrive}deg)`,
+    opacity: Math.max(0.6, 1.0 - Math.random() * overdrive * 0.4),
+  } : {};
+
   return (
     <div className="relative w-full h-screen bg-black text-[#E1E0CC] font-sans p-4 md:p-6">
       <div className="relative w-full h-full rounded-[4px] overflow-hidden bg-black">
@@ -134,8 +142,12 @@ export default function App() {
         </div>
 
         {/* Global Navbar */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black rounded-b-[4px] px-4 py-3 md:px-8 flex items-center justify-center gap-3 sm:gap-4 md:gap-8 lg:gap-10 z-50 border-x border-b border-white/10">
-          <button 
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50">
+          <div 
+            style={glitchStyle}
+            className="bg-black rounded-b-[4px] px-4 py-3 md:px-8 flex items-center justify-center gap-3 sm:gap-4 md:gap-8 lg:gap-10 border-x border-b border-white/10"
+          >
+            <button 
             onClick={() => setCurrentSection('entry')} 
             className={`font-tomorrow text-[10px] sm:text-xs md:text-sm transition-colors whitespace-nowrap ${currentSection === 'entry' ? 'text-[#E1E0CC]' : 'text-[#E1E0CC]/50 hover:text-[#E1E0CC]/80'}`}
           >
@@ -150,9 +162,10 @@ export default function App() {
               {item.label}
             </button>
           ))}
+          </div>
         </div>
 
-        <div className="absolute inset-0 z-10 pointer-events-none">
+        <div style={glitchStyle} className="absolute inset-0 z-10 pointer-events-none">
           <AnimatePresence mode="wait">
             {currentSection === 'entry' && <Entry key="entry" onEnter={() => setCurrentSection('immersive')} />}
             {currentSection === 'model' && <InteractiveModel key="model" mode={learningMode} />}
