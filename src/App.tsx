@@ -31,12 +31,13 @@ export default function App() {
     bhCenterY: 0.5,
     bhScale: 1.0,
     chromatic: 0.0,
+    overdrive: 0.0,
   });
 
   useEffect(() => {
     switch (currentSection) {
       case 'entry':
-        setShaderProps(p => ({ ...p, bhScale: 1.0, bhCenterX: 0.5, bhCenterY: 0.5, tilt: 0.1, rotate: p.rotate, rotationSpeed: 0.2, chromatic: 0.0, starsOnly: 0.0 }));
+        setShaderProps(p => ({ ...p, bhScale: 1.0, bhCenterX: 0.5, bhCenterY: 0.5, tilt: 0.1, rotate: p.rotate, rotationSpeed: 0.2, chromatic: 0.0, starsOnly: 0.0, overdrive: 0.0 }));
         break;
       case 'model':
         setShaderProps(p => ({ ...p, bhScale: 0.7, bhCenterX: 0.7, bhCenterY: 0.5, tilt: 0.2, rotate: 0.0, rotationSpeed: 0.3, chromatic: 0.0, starsOnly: 0.0 }));
@@ -76,15 +77,17 @@ export default function App() {
     
     const animate = () => {
       const elapsed = (performance.now() - startTimeRef.current) / 1000; // in seconds
-      const maxTime = 8.0;
+      const maxTime = 10.0;
       const initialSpeed = 0.2;
-      const maxSpeed = 2.5;
+      const maxSpeed = 7.5;
       
       // Calculate new speed (clamped to maxSpeed)
       const t = Math.min(elapsed / maxTime, 1.0);
       const currentSpeed = initialSpeed + (maxSpeed - initialSpeed) * t;
       
-      setShaderProps(p => ({ ...p, rotationSpeed: currentSpeed }));
+      const currentOverdrive = elapsed > maxTime ? Math.min((elapsed - maxTime) / 2.0, 1.0) : 0.0;
+      
+      setShaderProps(p => ({ ...p, rotationSpeed: currentSpeed, overdrive: currentOverdrive }));
       accelerationRef.current = requestAnimationFrame(animate);
     };
     
@@ -112,7 +115,7 @@ export default function App() {
     }
 
     if (isDragging && currentSection === 'entry') {
-      setShaderProps(p => ({ ...p, rotate: 0.0, tilt: 0.1, rotationSpeed: 0.2 }));
+      setShaderProps(p => ({ ...p, rotate: 0.0, tilt: 0.1, rotationSpeed: 0.2, overdrive: 0.0 }));
     }
     setIsDragging(false);
   };

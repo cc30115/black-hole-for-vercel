@@ -10,6 +10,7 @@ export interface BlackHoleShaderProps {
   bhCenterY?: number;
   bhScale?: number;
   chromatic?: number;
+  overdrive?: number;
   className?: string;
 }
 
@@ -23,14 +24,15 @@ export const BlackHoleShader: React.FC<BlackHoleShaderProps> = ({
   bhCenterY = 0.5,
   bhScale = 1.0,
   chromatic = 0.0,
+  overdrive = 0.0,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const propsRef = useRef({ rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic });
+  const propsRef = useRef({ rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive });
 
   useEffect(() => {
-    propsRef.current = { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic };
-  }, [rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic]);
+    propsRef.current = { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive };
+  }, [rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -56,6 +58,7 @@ uniform float u_rotate;
 uniform vec2 u_bhCenter;
 uniform float u_bhScale;
 uniform float u_chromatic;
+uniform float u_overdrive;
 
 // ──── Constants ────
 const float PI = 3.14159265359;
@@ -239,6 +242,12 @@ void main() {
     float sc = u_bhScale > 0.0 ? u_bhScale : 1.0;
     vec2 uv = (fc - ctr) / sc / u_res.x;
 
+    if (u_overdrive > 0.01) {
+        float sx = (hash(vec2(u_time * 20.0, 10.0)) * 2.0 - 1.0);
+        float sy = (hash(vec2(u_time * 20.0, 20.0)) * 2.0 - 1.0);
+        uv += vec2(sx, sy) * 0.02 * u_overdrive;
+    }
+
     float camR = 28.0;
     float orbit = u_time * 0.055 * u_rotationSpeed;
     float tilt = 0.25 + u_tilt;
@@ -353,6 +362,15 @@ void main() {
     vec3 b = col * (0.983729 * col + 0.4329510) + 0.238081;
     col = a / b;
 
+    if (u_overdrive > 0.01) {
+        float st = hash(fc + u_time * 100.0);
+        col = mix(col, vec3(st), u_overdrive * 0.25);
+        if (hash(vec2(u_time * 5.0, uv.y * 10.0)) > 0.8) {
+            col.g += 0.3 * u_overdrive;
+            col.r -= 0.1 * u_overdrive;
+        }
+    }
+
     col = smoothstep(0.0, 1.0, col);
     col = pow(max(col, 0.0), vec3(0.92));
 
@@ -402,6 +420,7 @@ void main() {
     const uBhCenter = gl.getUniformLocation(prog, 'u_bhCenter');
     const uBhScale = gl.getUniformLocation(prog, 'u_bhScale');
     const uChromatic = gl.getUniformLocation(prog, 'u_chromatic');
+    const uOverdrive = gl.getUniformLocation(prog, 'u_overdrive');
 
     let animationFrameId: number;
     let startTime = performance.now();
@@ -418,11 +437,12 @@ void main() {
       currentProps.rotate += (target.rotate - currentProps.rotate) * f;
       currentProps.bhScale += (target.bhScale - currentProps.bhScale) * f;
       currentProps.chromatic += (target.chromatic - currentProps.chromatic) * f;
+      currentProps.overdrive += (target.overdrive - currentProps.overdrive) * f;
       currentProps.starsOnly = target.starsOnly; // Instant switch
       currentProps.bhCenterX += (target.bhCenterX - currentProps.bhCenterX) * f;
       currentProps.bhCenterY += (target.bhCenterY - currentProps.bhCenterY) * f;
 
-      const { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic } = currentProps;
+      const { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive } = currentProps;
       
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
@@ -444,6 +464,7 @@ void main() {
       gl.uniform2f(uBhCenter, bhCenterX, bhCenterY);
       gl.uniform1f(uBhScale, bhScale);
       gl.uniform1f(uChromatic, chromatic);
+      gl.uniform1f(uOverdrive, overdrive);
       
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       animationFrameId = requestAnimationFrame(render);
