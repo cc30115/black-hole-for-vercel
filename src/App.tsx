@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import BlackHoleShader from './components/BlackHoleShader';
 
@@ -18,6 +18,8 @@ export default function App() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
+  const accelerationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   const [shaderProps, setShaderProps] = useState({
     rotationSpeed: 0.3,
@@ -68,6 +70,25 @@ export default function App() {
     if (currentSection !== 'entry') return;
     setIsDragging(true);
     setLastPos({ x: e.clientX, y: e.clientY });
+
+    // Hold-to-accelerate logic
+    startTimeRef.current = performance.now();
+    
+    const animate = () => {
+      const elapsed = (performance.now() - startTimeRef.current) / 1000; // in seconds
+      const maxTime = 8.0;
+      const initialSpeed = 0.2;
+      const maxSpeed = 2.5;
+      
+      // Calculate new speed (clamped to maxSpeed)
+      const t = Math.min(elapsed / maxTime, 1.0);
+      const currentSpeed = initialSpeed + (maxSpeed - initialSpeed) * t;
+      
+      setShaderProps(p => ({ ...p, rotationSpeed: currentSpeed }));
+      accelerationRef.current = requestAnimationFrame(animate);
+    };
+    
+    accelerationRef.current = requestAnimationFrame(animate);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -85,8 +106,13 @@ export default function App() {
   };
 
   const handlePointerUp = () => {
+    if (accelerationRef.current) {
+      cancelAnimationFrame(accelerationRef.current);
+      accelerationRef.current = null;
+    }
+
     if (isDragging && currentSection === 'entry') {
-      setShaderProps(p => ({ ...p, rotate: 0.0, tilt: 0.1 }));
+      setShaderProps(p => ({ ...p, rotate: 0.0, tilt: 0.1, rotationSpeed: 0.2 }));
     }
     setIsDragging(false);
   };
