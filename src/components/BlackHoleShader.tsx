@@ -11,6 +11,7 @@ export interface BlackHoleShaderProps {
   bhScale?: number;
   chromatic?: number;
   overdrive?: number;
+  mass?: number;
   className?: string;
 }
 
@@ -25,14 +26,15 @@ export const BlackHoleShader: React.FC<BlackHoleShaderProps> = ({
   bhScale = 1.0,
   chromatic = 0.0,
   overdrive = 0.0,
+  mass = 1.0,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const propsRef = useRef({ rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive });
+  const propsRef = useRef({ rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive, mass });
 
   useEffect(() => {
-    propsRef.current = { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive };
-  }, [rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive]);
+    propsRef.current = { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive, mass };
+  }, [rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive, mass]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -59,14 +61,16 @@ uniform vec2 u_bhCenter;
 uniform float u_bhScale;
 uniform float u_chromatic;
 uniform float u_overdrive;
+uniform float u_mass;
 
 // ──── Constants ────
 const float PI = 3.14159265359;
 const float TAU = 6.28318530718;
-const float RS = 1.0;        // Schwarzschild radius
-const float ISCO = 3.0;      // Innermost stable circular orbit
-const float DISK_IN = 2.2;   // Inner glow edge (infalling material)
-const float DISK_OUT = 14.0;  // Outer disk edge
+float RS = 1.0;              // Schwarzschild radius (set from u_mass in main)
+const float ISCO_FACTOR = 3.0;
+const float DISK_IN_FACTOR = 2.2;
+const float DISK_OUT_FACTOR = 14.0;
+// DISK_OUT is now derived from RS in main()
 
 // ──────────────────────────────────────────
 // Hash — PCG-inspired, no sin()
@@ -161,7 +165,7 @@ vec3 bbColor(float t) {
 // ──────────────────────────────────────────
 // Accretion disk shading
 // ──────────────────────────────────────────
-vec4 shadeDisk(vec3 hit, vec3 vel, float time) {
+vec4 shadeDisk(vec3 hit, vec3 vel, float time, float ISCO, float DISK_IN, float DISK_OUT) {
     float r = length(hit.xz);
     if (r < DISK_IN * 0.5 || r > DISK_OUT * 1.05) return vec4(0.0);
 
@@ -237,6 +241,12 @@ vec4 shadeDisk(vec3 hit, vec3 vel, float time) {
 // Main
 // ──────────────────────────────────────────
 void main() {
+    // Dynamic Schwarzschild radius from mass uniform
+    RS = clamp(u_mass, 0.5, 3.0);
+    float ISCO = ISCO_FACTOR * RS;
+    float DISK_IN = DISK_IN_FACTOR * RS;
+    float DISK_OUT = DISK_OUT_FACTOR * RS;
+
     vec2 fc = gl_FragCoord.xy;
     vec2 ctr = (u_bhScale > 0.0 ? u_bhCenter : vec2(0.5)) * u_res;
     float sc = u_bhScale > 0.0 ? u_bhScale : 1.0;
@@ -312,7 +322,7 @@ void main() {
         if (pos.y * p1.y < 0.0 && diskAccum.a < 0.97) {
             float t = pos.y / (pos.y - p1.y);
             vec3 hit = mix(pos, p1, t);
-            vec4 dc = shadeDisk(hit, vel, u_time * u_rotationSpeed);
+            vec4 dc = shadeDisk(hit, vel, u_time * u_rotationSpeed, ISCO, DISK_IN, DISK_OUT);
             dc.rgb *= u_diskIntensity;
             if (diskCrossings >= 2) {
                 dc.rgb *= 0.15;
@@ -433,6 +443,7 @@ void main() {
     const uBhScale = gl.getUniformLocation(prog, 'u_bhScale');
     const uChromatic = gl.getUniformLocation(prog, 'u_chromatic');
     const uOverdrive = gl.getUniformLocation(prog, 'u_overdrive');
+    const uMass = gl.getUniformLocation(prog, 'u_mass');
 
     let animationFrameId: number;
     let startTime = performance.now();
@@ -450,11 +461,12 @@ void main() {
       currentProps.bhScale += (target.bhScale - currentProps.bhScale) * f;
       currentProps.chromatic += (target.chromatic - currentProps.chromatic) * f;
       currentProps.overdrive += (target.overdrive - currentProps.overdrive) * f;
+      currentProps.mass += (target.mass - currentProps.mass) * f;
       currentProps.starsOnly = target.starsOnly; // Instant switch
       currentProps.bhCenterX += (target.bhCenterX - currentProps.bhCenterX) * f;
       currentProps.bhCenterY += (target.bhCenterY - currentProps.bhCenterY) * f;
 
-      const { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive } = currentProps;
+      const { rotationSpeed, diskIntensity, starsOnly, tilt, rotate, bhCenterX, bhCenterY, bhScale, chromatic, overdrive, mass: massVal } = currentProps;
       
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
@@ -477,6 +489,7 @@ void main() {
       gl.uniform1f(uBhScale, bhScale);
       gl.uniform1f(uChromatic, chromatic);
       gl.uniform1f(uOverdrive, overdrive);
+      gl.uniform1f(uMass, massVal);
       
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       animationFrameId = requestAnimationFrame(render);

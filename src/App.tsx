@@ -32,6 +32,7 @@ export default function App() {
     bhScale: 1.0,
     chromatic: 0.0,
     overdrive: 0.0,
+    mass: 1.0,
   });
 
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function App() {
         <div style={glitchStyle} className="absolute inset-0 z-10 pointer-events-none">
           <AnimatePresence mode="wait">
             {currentSection === 'entry' && <Entry key="entry" onEnter={() => setCurrentSection('immersive')} />}
-            {currentSection === 'model' && <InteractiveModel key="model" mode={learningMode} />}
+            {currentSection === 'model' && <InteractiveModel key="model" mode={learningMode} setShaderProps={setShaderProps} />}
             {currentSection === 'simulation' && <Simulation key="simulation" shaderProps={shaderProps} setShaderProps={setShaderProps} />}
             {currentSection === 'immersive' && <Immersive key="immersive" setShaderProps={setShaderProps} onGoHome={() => setCurrentSection('entry')} />}
             {currentSection === 'comparison' && <Comparison key="comparison" setShaderProps={setShaderProps} />}
