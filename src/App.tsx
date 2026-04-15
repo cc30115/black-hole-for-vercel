@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => {
     switch (currentSection) {
       case 'entry':
-        setShaderProps(p => ({ ...p, bhScale: 1.0, bhCenterX: 0.5, bhCenterY: 0.5, tilt: 0.1, rotate: p.rotate, rotationSpeed: 0.2, chromatic: 0.0, starsOnly: 0.0, overdrive: 0.0 }));
+        setShaderProps(p => ({ ...p, bhScale: 1.0, bhCenterX: 0.5, bhCenterY: 0.5, tilt: 0.1, rotate: p.rotate, rotationSpeed: 0.2, chromatic: 0.0, starsOnly: 0.0, overdrive: 0.0, diskIntensity: 1.0 }));
         break;
       case 'model':
         setShaderProps(p => ({ ...p, bhScale: 0.7, bhCenterX: 0.7, bhCenterY: 0.5, tilt: 0.2, rotate: 0.0, rotationSpeed: 0.3, chromatic: 0.0, starsOnly: 0.0 }));
@@ -121,13 +121,17 @@ export default function App() {
   };
 
   const overdrive = shaderProps.overdrive || 0.0;
-  const isGlitched = overdrive > 0.01;
+  
+  // Cap the UI distortion if we are in the immersive journey so it remains readable
+  const uiOverdrive = currentSection === 'immersive' ? overdrive * 0.1 : overdrive;
+
+  const isGlitched = uiOverdrive > 0.01;
   const glitchStyle: React.CSSProperties = isGlitched ? {
-    filter: `contrast(${100 + overdrive * 100}%) saturate(${100 + overdrive * 200}%) hue-rotate(${(Math.random() - 0.5) * 180 * overdrive}deg)`,
-    transform: `translate(${(Math.random() - 0.5) * 30 * overdrive}px, ${(Math.random() - 0.5) * 10 * overdrive}px) skewX(${(Math.random() - 0.5) * 40 * overdrive}deg)`,
-    opacity: Math.max(0.5, 1.0 - Math.random() * overdrive * 0.5),
+    filter: `contrast(${100 + uiOverdrive * 100}%) saturate(${100 + uiOverdrive * 200}%) hue-rotate(${(Math.random() - 0.5) * 180 * uiOverdrive}deg)`,
+    transform: `translate(${(Math.random() - 0.5) * 30 * uiOverdrive}px, ${(Math.random() - 0.5) * 10 * uiOverdrive}px) skewX(${(Math.random() - 0.5) * 40 * uiOverdrive}deg)`,
+    opacity: Math.max(0.5, 1.0 - Math.random() * uiOverdrive * 0.5),
     clipPath: Math.random() > 0.8 ? `inset(${Math.random() * 30}% 0 ${Math.random() * 30}% 0)` : 'none',
-    textShadow: `${(Math.random() - 0.5) * 20 * overdrive}px 0 0 rgba(255,0,0,1), ${(Math.random() - 0.5) * -20 * overdrive}px 0 0 rgba(0,0,255,1)`,
+    textShadow: `${(Math.random() - 0.5) * 20 * uiOverdrive}px 0 0 rgba(255,0,0,1), ${(Math.random() - 0.5) * -20 * uiOverdrive}px 0 0 rgba(0,0,255,1)`,
   } : {};
 
   return (
