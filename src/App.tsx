@@ -77,7 +77,7 @@ export default function App() {
     
     const animate = () => {
       const elapsed = (performance.now() - startTimeRef.current) / 1000; // in seconds
-      const maxTime = 10.0;
+      const maxTime = 6.5; // Reduced by 35% from 10s
       const initialSpeed = 0.2;
       const maxSpeed = 7.5;
       
@@ -122,10 +122,12 @@ export default function App() {
 
   const overdrive = shaderProps.overdrive || 0.0;
   const isGlitched = overdrive > 0.01;
-  const glitchStyle = isGlitched ? {
-    filter: `contrast(${100 + overdrive * 50}%) saturate(${100 + overdrive * 100}%) hue-rotate(${(Math.random() - 0.5) * 90 * overdrive}deg)`,
-    transform: `translate(${(Math.random() - 0.5) * 20 * overdrive}px, ${(Math.random() - 0.5) * 10 * overdrive}px) skewX(${(Math.random() - 0.5) * 20 * overdrive}deg)`,
-    opacity: Math.max(0.6, 1.0 - Math.random() * overdrive * 0.4),
+  const glitchStyle: React.CSSProperties = isGlitched ? {
+    filter: `contrast(${100 + overdrive * 100}%) saturate(${100 + overdrive * 200}%) hue-rotate(${(Math.random() - 0.5) * 180 * overdrive}deg)`,
+    transform: `translate(${(Math.random() - 0.5) * 30 * overdrive}px, ${(Math.random() - 0.5) * 10 * overdrive}px) skewX(${(Math.random() - 0.5) * 40 * overdrive}deg)`,
+    opacity: Math.max(0.5, 1.0 - Math.random() * overdrive * 0.5),
+    clipPath: Math.random() > 0.8 ? `inset(${Math.random() * 30}% 0 ${Math.random() * 30}% 0)` : 'none',
+    textShadow: `${(Math.random() - 0.5) * 20 * overdrive}px 0 0 rgba(255,0,0,1), ${(Math.random() - 0.5) * -20 * overdrive}px 0 0 rgba(0,0,255,1)`,
   } : {};
 
   return (
